@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Voice Test</title></head>
+<body style="font-family:Arial;padding:30px;background:#f0f8ff">
+<h2>Voice Test — tap a button to test</h2>
+<p id="status" style="color:#666;margin:10px 0">Loading voices...</p>
+<div id="voiceList" style="margin:10px 0;font-size:13px;color:#333"></div>
+<button onclick="speak1()" style="padding:14px 24px;font-size:18px;margin:8px;background:#4caf50;color:white;border:none;border-radius:12px;cursor:pointer">🔊 Test: "Hello, I am Echo the parrot!"</button><br>
+<button onclick="speak2()" style="padding:14px 24px;font-size:18px;margin:8px;background:#6a4cff;color:white;border:none;border-radius:12px;cursor:pointer">🔊 Test: "The ay sound. Like in rain."</button><br>
+<p id="result" style="margin-top:20px;font-weight:bold;color:#d32f2f"></p>
+
+<script>
+var voices = [];
+var selectedVoice = null;
+
+function loadVoices() {
+  voices = window.speechSynthesis.getVoices();
+  var list = document.getElementById('voiceList');
+  var status = document.getElementById('status');
+  
+  if (voices.length === 0) {
+    status.textContent = '⚠️ No voices found yet — try tapping a button';
+    return;
+  }
+  
+  status.textContent = '✅ ' + voices.length + ' voices found';
+  
+  // Try to find best English voice
+  var preferred = [
+    'Google UK English Female',
+    'Google UK English Male', 
+    'Google US English',
+    'Microsoft Zira',
+    'Karen',
+    'Samantha',
+    'Daniel'
+  ];
+  
+  for (var i = 0; i < preferred.length; i++) {
+    for (var j = 0; j < voices.length; j++) {
+      if (voices[j].name.indexOf(preferred[i]) > -1) {
+        selectedVoice = voices[j];
+        break;
+      }
+    }
+    if (selectedVoice) break;
+  }
+  
+  // Fallback: first English voice
+  if (!selectedVoice) {
+    for (var k = 0; k < voices.length; k++) {
+      if (voices[k].lang.indexOf('en') === 0) {
+        selectedVoice = voices[k];
+        break;
+      }
+    }
+  }
+  
+  // Show all voices
+  var html = '<strong>Available voices:</strong><br>';
+  voices.forEach(function(v) {
+    var marker = (selectedVoice && v.name === selectedVoice.name) ? ' ← SELECTED' : '';
+    html += v.name + ' (' + v.lang + ')' + marker + '<br>';
+  });
+  list.innerHTML = html;
+  
+  if (selectedVoice) {
+    status.textContent += ' — Using: ' + selectedVoice.name;
+  }
+}
+
+window.speechSynthesis.onvoiceschanged = loadVoices;
+loadVoices();
+
+function speak(text) {
+  var result = document.getElementById('result');
+  window.speechSynthesis.cancel();
+  
+  voices = window.speechSynthesis.getVoices();
+  if (voices.length === 0) {
+    result.textContent = '❌ No voices — your browser may not support speech';
+    return;
+  }
+  
+  loadVoices();
+  
+  var utt = new SpeechSynthesisUtterance(text);
+  utt.rate = 0.85;
+  utt.pitch = 1.1;
+  utt.volume = 1;
+  if (selectedVoice) utt.voice = selectedVoice;
+  
+  utt.onstart = function() { result.textContent = '🔊 Speaking: ' + text; };
+  utt.onend = function() { result.textContent = '✅ Finished speaking'; };
+  utt.onerror = function(e) { result.textContent = '❌ Error: ' + e.error; };
+  
+  window.speechSynthesis.speak(utt);
+}
+
+function speak1() { speak("Hello! I am Echo the parrot. Squawk!"); }
+function speak2() { speak("The ay sound. Like in rain. Like in pain. Now you say it. A Y."); }
+</script>
+</body>
+</html>
